@@ -1,0 +1,52 @@
+[
+  {
+    "archivo": "01_referencia.jpeg",
+    "sha256": "0bee033e5cf8415c73676d40d8640d1c2443d69012f601be6ad24338eacc2a31",
+    "roi_xyxy": [
+      440,
+      205,
+      585,
+      530
+    ]
+  },
+  {
+    "archivo": "02_iluminacion.jpeg",
+    "sha256": "0d05ee9817e5550c0871965f4c0790ef95e1cb32e11a4775b6a3d858287098d5",
+    "roi_xyxy": [
+      440,
+      170,
+      580,
+      485
+    ]
+  },
+  {
+    "archivo": "03_desenfoque.jpeg",
+    "sha256": "e94c5a6118bae9f0acb32097547f851596d60afa9efdd5d0b2f777668f40da84",
+    "roi_xyxy": [
+      385,
+      300,
+      510,
+      540
+    ]
+  },
+  {
+    "archivo": "04_fondo_complejo.jpeg",
+    "sha256": "c36023f5e4a7548ef98cf4d5de0f4a027ce1f506b8e64843c7436a679b3d547d",
+    "roi_xyxy": [
+      335,
+      180,
+      440,
+      385
+    ]
+  },
+  {
+    "archivo": "05_angulo.jpeg",
+    "sha256": "3ddf9dddbfc529ce5e96e38e24456722879d22bb66fd6914c11ebcf12d412db8",
+    "roi_xyxy": [
+      475,
+      340,
+      610,
+      565
+    ]
+  }
+]

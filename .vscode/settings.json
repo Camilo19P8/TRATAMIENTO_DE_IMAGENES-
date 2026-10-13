@@ -1,0 +1,7 @@
+{
+  "editor.fontSize": 15,
+  "editor.wordWrap": "on",
+  "files.encoding": "utf8",
+  "python.analysis.typeCheckingMode": "basic",
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/Scripts/python.exe"
+}
