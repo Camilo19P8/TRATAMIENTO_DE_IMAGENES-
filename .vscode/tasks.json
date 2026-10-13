@@ -3,12 +3,26 @@
   "tasks": [
     {
       "label": "Reproducir práctica completa",
+      "dependsOrder": "sequence",
+      "dependsOn": ["Analizar fotografías", "Generar figuras del proceso"],
+      "problemMatcher": [],
+      "group": {"kind": "build", "isDefault": true}
+    },
+    {
+      "label": "Analizar fotografías",
       "type": "process",
       "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "args": ["src/practica.py"],
       "options": {"cwd": "${workspaceFolder}"},
-      "problemMatcher": [],
-      "group": {"kind": "build", "isDefault": true}
+      "problemMatcher": []
+    },
+    {
+      "label": "Generar figuras del proceso",
+      "type": "process",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "args": ["src/proceso_visual.py"],
+      "options": {"cwd": "${workspaceFolder}"},
+      "problemMatcher": []
     }
   ]
 }

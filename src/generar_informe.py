@@ -12,6 +12,7 @@ from docx.opc.constants import RELATIONSHIP_TYPE as RT
 ROOT = Path(__file__).resolve().parents[1]
 DATA = json.loads((ROOT/'resultados/resumen.json').read_text(encoding='utf-8'))
 FIG = ROOT/'resultados/figuras'
+evidence=ROOT/'resultados/evidencias_vscode'
 DOC = Document()
 sec = DOC.sections[0]
 sec.page_width, sec.page_height = Inches(8.5), Inches(11)
@@ -104,10 +105,6 @@ def table(num,title,headers,rows,widths):
                 for r in p.runs:r.font.size=Pt(10);r.bold=(i==0)
     para('',False,True)
 
-def code(text):
-    p=para(text,False,True);p.paragraph_format.line_spacing=1
-    for r in p.runs:r.font.name='Consolas';r.font.size=Pt(9)
-
 # Portada académica siguiendo la referencia suministrada.
 p=DOC.add_paragraph();p.paragraph_format.space_after=Pt(66)
 DOC.add_paragraph('Informe de resultados de tratamiento de imagen',style='Title')
@@ -152,48 +149,92 @@ para(f"I3 registra la menor respuesta global del Laplaciano ({fmt(rows[2]['lapla
 para(f"I2 alcanza un brillo medio de {fmt(rows[1]['brillo'])}, frente a {fmt(rows[0]['brillo'])} en I1. El gris medio del objeto también aumenta de {fmt(rows[0]['roi_brillo'])} a {fmt(rows[1]['roi_brillo'])}. La imagen disponible no evidencia una subexposición respecto a la referencia. La autoexposición o una iluminación distinta podrían explicar el resultado, pero no se verificaron esas causas.")
 para('I4 presenta distractores y menor tamaño aparente de la lata. I5 modifica la perspectiva y obtiene una alta respuesta del Laplaciano en el recorte, aunque ello no demuestra mejor legibilidad. Para esas condiciones, una segmentación o una rectificación geométrica respondería mejor al problema que aplicar un filtro de enfoque indiscriminadamente.')
 
-page('Tratamiento aplicado y parámetros')
+page('Lectura y validación de los archivos')
+figure(8,'Lectura y exportación de imágenes en VS Code',evidence/'03_lectura.jpg',6.3,'Captura real del archivo practica.py. La lectura valida que el archivo pueda decodificarse antes de medirlo.')
+para('La primera etapa consiste en localizar las cinco fotografías y convertir sus archivos JPEG en matrices de píxeles. La función leer combina la lectura binaria de NumPy con la decodificación de OpenCV. Esta decisión evita dificultades con rutas que contienen tildes en Windows. Si un archivo no puede abrirse, la validación detiene el proceso y señala cuál falló.')
+para('Con las matrices disponibles se obtiene el ancho, el alto y el número de canales. El formato se identifica en el archivo y el tamaño corresponde a sus bytes en disco. El procesamiento utiliza copias en memoria; las imágenes originales permanecen intactas. La función guardar codifica el resultado de salida y comprueba que la operación haya tenido éxito.')
+
+page('Cálculo de los indicadores de diagnóstico')
+figure(9,'Funciones de medición abiertas en VS Code',evidence/'04_metricas.jpg',6.3,'Captura real de los indicadores usados en el diagnóstico. Se muestran brillo, contraste, Laplaciano, Tenengrad y proporciones de intensidades extremas.')
+para('La conversión a gris permite medir todas las fotografías sobre una misma escala de intensidad. La media resume el brillo y la desviación estándar describe la dispersión tonal. Los gradientes Sobel cuantifican transiciones de intensidad en dos direcciones; su energía conjunta aporta una medida complementaria a la varianza del Laplaciano.')
+para('La función devuelve los valores en un registro que se integra en la tabla comparativa. También se calculan las proporciones de píxeles próximos al negro y al blanco. Estos porcentajes se conservan en los resultados digitales y ayudan a detectar extremos tonales, aunque no identifican por sí solos la causa física de una exposición o una pérdida de detalle.')
+
+page('Separación entre medición y tratamiento')
+figure(10,'Imagen original gris de diagnóstico y luminancia de tratamiento',FIG/'11_color_gris_luminancia.png',6.3,'Los paneles proceden de I3 y conservan el mismo encuadre. La imagen en gris se utiliza para medir; el canal Y permite modificar luminancia conservando los canales de crominancia durante el realce.')
+para('El panel en color conserva la información visual completa de la escena. El panel gris representa la intensidad utilizada por los indicadores, mientras que el tercero muestra la luminancia Y del espacio YCrCb. En esta fotografía ambos paneles de intensidad tienen apariencia similar, pero cumplen funciones distintas en el procedimiento.')
+para('Medir sobre gris facilita comparar brillo, contraste y bordes. Tratar solamente Y reduce la modificación directa de la información de color frente a realzar cada canal BGR por separado. Después del tratamiento se recombinan los canales para obtener una imagen en color con el mismo tamaño. La conversión entre espacios y la cuantización de 8 bits pueden introducir pequeñas variaciones.')
+para('La comparación de los paneles también permite reconocer que la pérdida de detalle ya está presente antes del filtrado. Convertir a gris o separar luminancia no restaura los trazos difusos; estas operaciones preparan la representación que utiliza cada etapa del análisis.')
+
+page('Construcción de la máscara de enfoque')
+figure(11,'Luminancia suavizada y diferencia que refuerza los bordes',FIG/'12_etapas_luminancia.png',5.5,'Región nativa de la lata negra. El residual se representa como 128 + 6(Y − suavizada), con cero en gris medio. La ganancia de seis se usa solo para visualizar; no es la cantidad de tratamiento.')
+para('El primer panel muestra la luminancia original del objeto. El segundo aplica un suavizado gaussiano con sigma de 1,2 píxeles: se atenúan pequeñas variaciones y transiciones. Restar esa versión suavizada de la luminancia original produce una diferencia que concentra parte de la información de bordes y textura.')
+para('El tercer panel representa esa diferencia mediante una escala centrada en gris. Los valores positivos se ven más claros y los negativos, más oscuros. El aumento visual permite localizar trazos que serían difíciles de distinguir en el residual sin amplificación. La imagen sirve para explicar la operación y no constituye una restauración adicional.')
+
+page('Tratamiento aplicado en VS Code')
 para('Seleccionamos una máscara de enfoque sobre el canal Y del espacio YCrCb. El desenfoque atenúa transiciones entre intensidades; sumar una fracción de la diferencia entre la luminancia original y su versión suavizada refuerza los bordes que todavía permanecen. Usar únicamente Y permite conservar los canales de crominancia durante la operación. La conversión y la cuantización pueden producir pequeñas diferencias de color.')
 para('La expresión utilizada es Y′ = clip[Y + a(Y − GaussianBlur(Y, σ)), 0, 255], con cantidad a = 0,8 y desviación σ = 1,2 píxeles. El tamaño del núcleo se calcula automáticamente mediante (0, 0). El recorte se mide antes de limitar los valores y se exporta el resultado en PNG para evitar una nueva compresión JPEG con pérdida.')
-code('ycc = cv2.cvtColor(image, cv2.COLOR_BGR2YCrCb)\ny = ycc[:, :, 0].astype(np.float32)\nsuave = cv2.GaussianBlur(y, (0, 0), sigmaX=1.2)\nsin_recortar = y + 0.8 * (y - suave)\nycc[:, :, 0] = np.clip(sin_recortar, 0, 255).astype(np.uint8)\nresultado = cv2.cvtColor(ycc, cv2.COLOR_YCrCb2BGR)')
+figure(12,'Implementación del realce sobre luminancia en VS Code',evidence/'05_realce.jpg',6.3,'Captura real de la función realzar. Se muestran la conversión, el suavizado, el cálculo de la diferencia, la limitación del rango y la reconstrucción del color.')
+
+page('Exploración y selección de los parámetros')
+figure(13,'Evaluación de tres cantidades de realce en VS Code',evidence/'06_parametros.jpg',6.3,'El mismo procedimiento evalúa cantidades de 0,4, 0,8 y 1,2 con sigma fijo. Cada opción se mide y se exporta antes de elegir la cantidad intermedia.')
 table(4,'Exploración de la cantidad de realce con sigma fijo',['Cantidad a','Laplaciano\nglobal','Tenengrad\nglobal','Recorte Y\n%'],[[fmt(r['cantidad']),fmt(r['laplaciano']),fmt(r['tenengrad']),f"{r['recorte_previo_pct']:.4f}".replace('.',',')] for r in DATA['parametros']],[1.1,1.8,1.8,1.3])
-para('La cantidad 0,8 ofrece un realce intermedio con poco recorte de luminancia. La opción 1,2 eleva más los indicadores y casi duplica el recorte, pero un indicador mayor no prueba mayor fidelidad. Se escoge 0,8 como decisión conservadora para esta imagen, sin afirmar que sea un óptimo universal. No aplicamos ecualización global ni CLAHE porque el problema seleccionado es la definición de bordes, no un histograma que requiera expandirse (OpenCV, s. f.-a).')
+para('Elegimos 0,8 como realce moderado. La cantidad 1,2 casi duplica el recorte; la comparación visual siguiente permite valorar su efecto.')
+
+page('Comparación visual de las cantidades de realce')
+figure(14,'Mismo objeto con tres intensidades del tratamiento',FIG/'14_parametros_detalle.png',6.3,'Todos los paneles corresponden al mismo recorte nativo de I3. El panel original permite distinguir el efecto del filtro de un cambio de encuadre.')
+para('La cantidad 0,4 introduce un realce suave. La opción 0,8 acentúa más los contornos del logotipo y del cuerpo de la lata, y la cantidad 1,2 intensifica aún más las transiciones. La lectura visual debe realizarse sobre las mismas letras y bordes: un panel más contrastado no significa que contenga información nueva.')
+para('La tabla 4 complementa esta comparación al mostrar el crecimiento de la respuesta a bordes y del recorte de luminancia. Elegimos la cantidad intermedia para moderar el efecto. La comparación no demuestra un máximo de calidad ni un parámetro óptimo para cualquier fotografía; permite justificar una decisión específica para la imagen analizada.')
+para('El texto fino continúa degradado en las tres alternativas. Aumentar la cantidad puede reforzar artefactos o transiciones no deseadas. La ecualización y CLAHE se descartaron porque responden a un problema tonal diferente (OpenCV, s. f.-a). La selección conserva como conclusión un realce parcial de los bordes presentes.')
 
 page('Comparación visual antes y después')
-figure(8,'Resultado del tratamiento en la imagen completa',FIG/'08_antes_despues.png',6.3,'Ambos paneles corresponden a I3; se conserva la misma resolución y el mismo encuadre.')
-figure(9,'Detalle de la lata negra en la misma región de I3',FIG/'09_detalle.png',4.4,'Recorte nativo de 125 × 240 píxeles en ambos paneles, ampliado únicamente para visualizarlo. El tratamiento se realizó sobre la imagen completa.')
+figure(15,'Resultado del tratamiento en la imagen completa',FIG/'08_antes_despues.png',6.3,'Ambos paneles corresponden a I3; se conserva la misma resolución y el mismo encuadre.')
+figure(16,'Detalle de la lata negra en la misma región de I3',FIG/'09_detalle.png',4.4,'Recorte nativo de 125 × 240 píxeles en ambos paneles, ampliado únicamente para visualizarlo. El tratamiento se realizó sobre la imagen completa.')
 para('El borde de la lata y algunos trazos del logotipo se perciben más definidos. Las letras pequeñas siguen borrosas y algunas transiciones se acentúan. Se observa un realce moderado, sin evidencia de recuperación de información perdida.')
+
+page('Inspección del resultado en dos detalles de la escena')
+figure(17,'Comparación de texto y contornos en la lata y el sobre',FIG/'15_detalles_resultado.png',5.4,'Cada fila presenta una región nativa de I3 antes y después. Los recortes solo se amplían para observarlos; la intervención se aplica a la fotografía completa.')
+para('La primera fila permite revisar los trazos del logotipo de la lata, que adquieren transiciones más marcadas. La segunda muestra el sobre situado frente al teclado, donde las letras y bordes siguen afectados por el desenfoque. La comparación amplía la evaluación a otro elemento de la misma escena sin cambiar el tratamiento.')
+para('El resultado es coherente en ambos detalles: se refuerzan contornos conservados, mientras que la información fina permanece incompleta. Esta evidencia apoya la recomendación de repetir la captura cuando se necesite leer texto con precisión. No se atribuye al filtro una mejora de OCR, porque esa tarea no se ejecutó.')
+
+page('Respuesta de bordes y alcance del cambio')
+figure(18,'Magnitud del Laplaciano antes y después en el objeto',FIG/'13_respuesta_bordes.png',5.4,'Se utiliza la misma escala de visualización en ambos paneles, desde cero hasta el máximo conjunto de las dos matrices. Los valores absolutos muestran magnitud, sin conservar el signo del Laplaciano.')
+para('El Laplaciano responde a cambios de intensidad en la región analizada. Tras el realce, algunas transiciones adquieren mayor magnitud y aparecen más claras en el panel derecho. Esta representación ayuda a interpretar por qué aumenta la varianza registrada en las tablas.')
+para('La escala común evita que cada panel se normalice independientemente y produzca una apariencia engañosa de similitud. Aun así, una respuesta más intensa no demuestra una restauración más fiel: el filtro modifica justamente esas transiciones. La evaluación de detalle y de legibilidad sigue siendo necesaria para interpretar el cambio.')
 
 page('Evaluación numérica del resultado')
 before,after=DATA['antes'],DATA['despues']
 table(5,'Comparación global de I3 antes y después',['Indicador','Antes','Después','Cambio\n%'],[[label,fmt(before[key]),fmt(after[key]),fmt((after[key]/before[key]-1)*100)] for label,key in [('Brillo medio','brillo'),('Contraste','contraste'),('Varianza Laplaciano','laplaciano'),('Tenengrad','tenengrad')]], [2.3,1.3,1.3,1.1])
-figure(10,'Efecto sobre el histograma y la respuesta a bordes',FIG/'10_evaluacion.png',6.3,'La distribución tonal cambia poco, mientras que el realce aumenta la respuesta del Laplaciano.')
+figure(19,'Efecto sobre el histograma y la respuesta a bordes',FIG/'10_evaluacion.png',6.3,'La distribución tonal cambia poco, mientras que el realce aumenta la respuesta del Laplaciano.')
 para(f"La varianza del Laplaciano aumenta de {fmt(before['laplaciano'])} a {fmt(after['laplaciano'])}, un {fmt((after['laplaciano']/before['laplaciano']-1)*100)} %. Tenengrad aumenta un {fmt((after['tenengrad']/before['tenengrad']-1)*100)} %. El brillo disminuye solo {fmt(before['brillo']-after['brillo'])} niveles y el contraste cambia un {fmt((after['contraste']/before['contraste']-1)*100)} %. El comportamiento concuerda con un realce de bordes y un ajuste tonal pequeño.")
 recorte_texto=f"{DATA['recorte_previo_pct']:.4f}".replace('.',',')
 para(f"En el recorte nativo de la lata, el Laplaciano pasa de {fmt(DATA['antes_roi']['laplaciano'])} a {fmt(DATA['despues_roi']['laplaciano'])}. Estos valores no se comparan directamente con la tabla 3, que utiliza recortes normalizados. El {recorte_texto} % de valores Y se recorta antes de reconstruir el color; esta medida es distinta de la proporción de píxeles claros o negros del gris final.")
 
+page('Cambios de intensidad en la región del objeto')
+figure(20,'Histogramas y diferencias de intensidad en el recorte nativo',FIG/'16_cambios_region.png',6.3,'El panel derecho calcula la diferencia del gris final entre los mismos píxeles después y antes. No se compara con la fotografía de referencia ni con otra perspectiva.')
+para('El histograma del panel izquierdo resume cómo se distribuyen las intensidades dentro de la lata seleccionada. El segundo panel muestra cuántos píxeles aumentan o disminuyen su intensidad. Las diferencias positivas representan aclaramiento y las negativas, oscurecimiento en esas posiciones.')
+para(f"En esta región, el brillo medio pasa de {fmt(DATA['antes_roi']['brillo'])} a {fmt(DATA['despues_roi']['brillo'])}, mientras que el contraste pasa de {fmt(DATA['antes_roi']['contraste'])} a {fmt(DATA['despues_roi']['contraste'])}. El efecto sobre la media es pequeño y la dispersión aumenta. Esta combinación concuerda con un realce que modifica transiciones y no intenta cambiar globalmente la iluminación.")
+para('La coincidencia de encuadre y tamaño permite asociar la diferencia por píxel al procedimiento aplicado. La gráfica no expresa error de restauración, porque la imagen antes del filtro ya contiene degradación. Para medir fidelidad se necesitaría una referencia nítida alineada de ese mismo encuadre.')
+
 page('Limitaciones conclusiones y recomendaciones')
-para('La máscara de enfoque mejora parcialmente la apariencia de los bordes presentes. La inspección de la figura 9 muestra que el texto fino continúa degradado, por lo que el tratamiento no satisface por sí solo una tarea de lectura precisa de etiquetas. Las medidas de bordes aumentan en parte por la propia definición del filtro; también podrían aumentar por ruido o halos. No se evaluó un clasificador, un detector ni un sistema OCR, y no se afirma una mejora de exactitud en esas tareas.')
+para('La máscara de enfoque mejora parcialmente la apariencia de los bordes presentes. La inspección de las figuras 16 y 17 muestra que el texto fino continúa degradado, por lo que el tratamiento no satisface por sí solo una tarea de lectura precisa de etiquetas. Las medidas de bordes aumentan en parte por la propia definición del filtro; también podrían aumentar por ruido o halos. No se evaluó un clasificador, un detector ni un sistema OCR, y no se afirma una mejora de exactitud en esas tareas.')
 para('Las cinco tomas presentan cambios de escala, distancia aparente, iluminación y perspectiva a la vez. El recorte del objeto reduce la influencia del fondo, pero la normalización modifica el muestreo y no proporciona correspondencia punto a punto. No se calcularon PSNR ni SSIM entre I1 e I3, porque no existe una imagen nítida alineada del mismo encuadre que permita atribuir esas métricas a restauración.')
 para('La fotografía identificada como baja iluminación requiere una nueva captura controlada para demostrar esa condición. Se recomienda mantener cámara, distancia y encuadre fijos, reducir la luz y registrar la exposición. Suprimir el autoajuste de exposición cuando el equipo lo permita facilitaría relacionar el cambio de luz con el resultado. Una imagen artificialmente oscurecida serviría como simulación, pero no sustituiría la fotografía propia solicitada.')
 para('Para el desenfoque, la mejor medida es repetir la captura apoyando la cámara y enfocando sobre la lata. Para I4 conviene reducir distractores o segmentar el objeto; para I5, documentar la perspectiva y, si la tarea lo exige, estimar una transformación geométrica. La práctica evidencia que cada intervención debe partir del problema observado y valorarse con imágenes, indicadores y limitaciones explícitas.')
 
-page('Evidencias del proyecto en VS Code')
-evidence=ROOT/'resultados/evidencias_vscode'
-if (evidence/'01_codigo.jpg').exists():
-    figure(11,'Script de tratamiento abierto en VS Code',evidence/'01_codigo.jpg',6.5,'Captura real de la ventana de VS Code del equipo. El archivo mostrado pertenece al mismo repositorio que produce las métricas y las figuras del informe.')
-para('La estructura separa datos originales, código fuente, cuaderno, resultados e informe. La función leer utiliza imdecode y fromfile para admitir rutas con tildes en Windows. La función metricas reúne los descriptores, y realzar implementa la única intervención seleccionada. Los resultados numéricos se conservan en archivos CSV y JSON para facilitar la revisión.')
-code('gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)\nbrillo = float(gray.mean())\ncontraste = float(gray.std())\nnitidez = float(cv2.Laplacian(gray, cv2.CV_64F).var())')
+page('Exportación y trazabilidad de los resultados')
+figure(21,'Exportación de métricas y huellas de los originales en VS Code',evidence/'07_exportacion.jpg',6.3,'Captura real del código que conserva resultados numéricos, versiones del entorno y un manifiesto de las fotografías.')
+para('El proceso guarda la comparación antes y después y los parámetros evaluados en archivos CSV. El resumen JSON reúne los valores y las versiones del entorno para revisarlos con precisión. El manifiesto registra una huella SHA-256 de cada original y las coordenadas de la región seleccionada, lo que permite comprobar que las imágenes de entrada no cambiaron.')
+para('Las figuras del proceso se conservan junto con las capturas reales del editor. El código y estas evidencias permiten revisar cada operación y repetirla con las mismas entradas. El informe Word y su PDF se entregan como documentos separados del repositorio de la práctica.')
 
 page('Resultados revisables y reproducibilidad')
-if (evidence/'02_resultados.jpg').exists():
-    figure(12,'Comparación generada y abierta en VS Code',evidence/'02_resultados.jpg',6.5,'Captura real del visor de imágenes de VS Code. La comparación procede del tratamiento ejecutado, no de una recreación del editor.')
+if (evidence/'08_resultados_ampliados.jpg').exists():
+    figure(22,'Detalles del resultado abiertos en VS Code',evidence/'08_resultados_ampliados.jpg',6.5,'Captura real del visor de imágenes de VS Code. Los paneles proceden de las regiones de la lata y el sobre medidas en la misma fotografía tratada.')
 para(f"La ejecución local utilizó Python {DATA['python']}, OpenCV {DATA['opencv']}, NumPy {DATA['numpy']} y Matplotlib {DATA['matplotlib']}. El procesamiento conserva los originales y utiliza parámetros fijos. El archivo manifiesto.json registra las huellas SHA-256 y las coordenadas de cada región del objeto.")
 para('Repositorio y código de la práctica',False,True)
 para('https://github.com/Camilo19P8/TRATAMIENTO_DE_IMAGENES-',False,True)
 para('Cuaderno preparado para Google Colab',False,True)
 para('https://colab.research.google.com/github/Camilo19P8/TRATAMIENTO_DE_IMAGENES-/blob/main/notebooks/Practica_tratamiento_imagenes.ipynb',False,True)
-para('Para reproducir, instalar requirements.txt y ejecutar python src/practica.py desde la raíz del proyecto. El README contiene instrucciones para VS Code y Colab. La ejecución documentada se realizó localmente; el enlace a Colab ofrece el entorno alternativo solicitado para repetirla.',False,True)
+para('Para reproducir, ejecutar practica.py y luego proceso_visual.py con las dependencias de requirements.txt. El README detalla el procedimiento. La ejecución documentada es local; el cuaderno permite repetir el análisis en Colab. El informe se entrega separado del repositorio.',False,True)
 
 page('Referencias y correspondencia con la actividad')
 for author,title,container,url in [
@@ -207,8 +248,8 @@ table(6,'Localización de los elementos solicitados',['Elemento','Evidencia en e
 ['Cinco fotografías propias','Figuras 1 a 5; originales en datos/originales'],
 ['Diagnóstico y tabla comparativa','Tablas 1 a 3; figura 7; diagnostico.csv'],
 ['Problema y tratamiento justificado','Selección de I3; tabla 4; función realzar'],
-['Comparación visual y numérica','Figuras 8 a 10; tabla 5; antes_despues.csv'],
-['Código y enlace funcional','Figuras 11 y 12; repositorio y cuaderno'],
+['Comparación visual y numérica','Figuras 14 a 20; tabla 5; antes_despues.csv'],
+['Código y enlace funcional','Figuras 8, 9, 12, 13 y 21; repositorio'],
 ['Análisis conclusiones y límites','Interpretación; evaluación; recomendaciones'],
 ['PDF de al menos dos páginas','Informe completo con portada y referencias'],
 ['Condición de baja iluminación','Discrepancia documentada; requiere recaptura controlada']

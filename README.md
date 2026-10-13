@@ -12,9 +12,10 @@ Práctica de Semana 8 · **Percepción Computacional** · Universidad de Cundina
 
 - `datos/originales/`: las cinco fotografías propias, sin modificar.
 - `src/practica.py`: diagnóstico, métricas, tratamiento y figuras.
+- `src/proceso_visual.py`: figuras de las etapas intermedias, parámetros, bordes y detalles del resultado.
 - `notebooks/Practica_tratamiento_imagenes.ipynb`: cuaderno para VS Code o Google Colab.
 - `resultados/`: CSV, JSON, imagen tratada, figuras y capturas reales de VS Code.
-- `informe/`: PDF de entrega y documento editable; `src/generar_informe.py` genera el DOCX a partir de los resultados.
+- `src/generar_informe.py`: genera el documento editable a partir de resultados y capturas reales. La carpeta local `informe/` está excluida de GitHub; el Word y el PDF se entregan por separado.
 
 ## Ejecutar en VS Code
 
@@ -24,6 +25,7 @@ Abrir esta carpeta con **Archivo > Abrir carpeta** y seleccionar un intérprete 
 python -m venv .venv
 .venv\Scripts\python.exe -m pip install -r requirements.txt
 .venv\Scripts\python.exe src/practica.py
+.venv\Scripts\python.exe src/proceso_visual.py
 ```
 
 También funciona en Linux y macOS usando `.venv/bin/python`. No es necesario activar el entorno. El programa escribe los resultados en `resultados/`, conserva los originales y no necesita una interfaz gráfica de OpenCV.
@@ -34,7 +36,7 @@ En esta copia local ya está preparado el entorno `.venv`. En VS Code, **Ctrl+Ma
 
 [Abrir el cuaderno en Colab](https://colab.research.google.com/github/Camilo19P8/TRATAMIENTO_DE_IMAGENES-/blob/main/notebooks/Practica_tratamiento_imagenes.ipynb)
 
-Ejecutar las celdas en orden. La primera clona este repositorio cuando se ejecuta en Colab e instala las dependencias; las siguientes ejecutan el script y muestran tablas y figuras. Se verificaron las cinco celdas de código mediante ejecución local sin errores. Las salidas incluidas son reales y locales; el cuaderno no contiene salidas de Colab inventadas. Para ejecutar un notebook en VS Code se requiere también `ipykernel` y la extensión Jupyter.
+Ejecutar las celdas en orden. La primera clona este repositorio cuando se ejecuta en Colab e instala las dependencias; las siguientes ejecutan el análisis, el proceso visual y muestran tablas y figuras. Se verificaron las seis celdas de código mediante ejecución local sin errores. Las salidas incluidas son reales y locales; el cuaderno no contiene salidas de Colab inventadas. Para ejecutar un notebook en VS Code se requiere también `ipykernel` y la extensión Jupyter.
 
 ## Resultado y limitaciones
 
