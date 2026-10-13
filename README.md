@@ -2,8 +2,10 @@
 
 Práctica de Semana 8 · **Percepción Computacional** · Universidad de Cundinamarca.
 
-**Autores:** Cristian Camilo Alarcon Delgadillo, Brayan Arley Saenz Cortes y Jonathan David Llanceros Bello.  
-**Docente:** Mónica María Fonseca Vigoya.  
+**Autores:** Cristian Camilo Alarcon Delgadillo, Brayan Arley Saenz Cortes y Jonathan David Llanceros Bello.
+
+**Docente:** Mónica María Fonseca Vigoya.
+
 **Fecha del informe:** 12 de octubre de 2026.
 
 ## Contenido
